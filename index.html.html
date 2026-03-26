@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Калькулятор газоблоков — полный</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #f4f7f9; 
+            padding: 20px; 
+            max-width: 900px; 
+            margin: 0 auto; 
+        }
+        h1 { text-align: center; color: #2c3e50; }
+        .container { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+        }
+        label { 
+            display: block; 
+            margin: 12px 0 5px; 
+            font-weight: bold; 
+        }
+        input, select { 
+            width: 100%; 
+            padding: 10px; 
+            border: 1px solid #ccc; 
+            border-radius: 6px; 
+            font-size: 16px; 
+        }
+        button { 
+            margin-top: 25px; 
+            width: 100%; 
+            padding: 14px; 
+            background: #27ae60; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 18px; 
+            cursor: pointer; 
+        }
+        button:hover { background: #219653; }
+        .result { 
+            margin-top: 25px; 
+            padding: 20px; 
+            background: #ecf0f1; 
+            border-radius: 8px; 
+            font-size: 17px; 
+            line-height: 1.7; 
+        }
+        .highlight { 
+            font-weight: bold; 
+            color: #27ae60; 
+            font-size: 22px; 
+        }
+        .note { 
+            font-size: 14px; 
+            color: #555; 
+            margin-top: 15px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧱 Полный калькулятор газоблоков</h1>
+
+        <label>Длина помещения (м):</label>
+        <input type="number" id="length" value="4" step="0.1">
+
+        <label>Ширина помещения (м):</label>
+        <input type="number" id="width" value="3.5" step="0.1">
+
+        <label>Высота помещения (м):</label>
+        <input type="number" id="height" value="2.1" step="0.01">
+
+        <label>Площадь двери (м²):</label>
+        <input type="number" id="door" value="2" step="0.1">
+
+        <label>Площадь окна (м²):</label>
+        <input type="number" id="window" value="1.2" step="0.1">
+
+        <label>Длина газоблока (м):</label>
+        <input type="number" id="block_length" value="0.625" step="0.001">
+
+        <label>Высота газоблока (м):</label>
+        <input type="number" id="block_height" value="0.25" step="0.001">
+
+        <label>Толщина стены (м):</label>
+        <select id="wall_thickness">
+            <option value="0.1">0.1 м (1 блок)</option>
+            <option value="0.15">0.15 м (1,5 блока)</option>
+            <option value="0.2" selected>0.2 м (2 блока)</option>
+            <option value="0.25">0.25 м (2,5 блока)</option>
+            <option value="0.3">0.3 м (3 блока)</option>
+        </select>
+
+        <label>Высота армопояса (м, 0 — если нет):</label>
+        <input type="number" id="armopoyas" value="0" step="0.01">
+
+        <label>Цена за 1 м³ газоблока (руб):</label>
+        <input type="number" id="price_per_m3" value="5500" step="100">
+
+        <label>Количество блоков на одном поддоне:</label>
+        <input type="number" id="blocks_per_pallet" value="40" step="1">
+
+        <button onclick="calculate()">Рассчитать всё</button>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        function calculate() {
+            const length = parseFloat(document.getElementById('length').value) || 0;
+            const width = parseFloat(document.getElementById('width').value) || 0;
+            const height = parseFloat(document.getElementById('height').value) || 0;
+            const door = parseFloat(document.getElementById('door').value) || 0;
+            const window = parseFloat(document.getElementById('window').value) || 0;
+            const block_length = parseFloat(document.getElementById('block_length').value) || 0;
+            const block_height = parseFloat(document.getElementById('block_height').value) || 0;
+            const wall_thickness_m = parseFloat(document.getElementById('wall_thickness').value) || 0.2;
+            const armopoyas_height = parseFloat(document.getElementById('armopoyas').value) || 0;
+            const price_per_m3 = parseFloat(document.getElementById('price_per_m3').value) || 0;
+            const blocks_per_pallet = parseFloat(document.getElementById('blocks_per_pallet').value) || 40;
+
+            if (length === 0 || width === 0 || height === 0 || block_length === 0 || block_height === 0) {
+                document.getElementById('result').innerHTML = "<strong style='color:red;'>Заполните все обязательные поля.</strong>";
+                return;
+            }
+
+            const perimeter = 2 * (length + width);
+            const wall_area = perimeter * height;
+            const openings_area = door + window;
+            const net_wall_area = wall_area - openings_area;
+
+            const block_face_area = block_length * block_height;
+
+            // Объём кладки в м³
+            const volume_walls = net_wall_area * wall_thickness_m;
+            let volume_armopoyas = 0;
+            if (armopoyas_height > 0) {
+                volume_armopoyas = perimeter * armopoyas_height * wall_thickness_m;
+            }
+            const total_volume = volume_walls + volume_armopoyas;
+
+            // Количество блоков
+            const blocks_walls_exact = net_wall_area / block_face_area;
+            let blocks_armopoyas_exact = 0;
+            if (armopoyas_height > 0) {
+                blocks_armopoyas_exact = (perimeter * armopoyas_height) / block_face_area;
+            }
+            const total_blocks_exact = blocks_walls_exact + blocks_armopoyas_exact;
+            const total_blocks_min = Math.ceil(total_blocks_exact);
+
+            // Запас 5% + 6 штук
+            const recommended_blocks = Math.ceil(total_blocks_min * 1.05) + 6;
+
+            // Поддоны (округление вверх)
+            const pallets = Math.ceil(recommended_blocks / blocks_per_pallet);
+
+            // Клей (25 кг/м³ + 10% запас)
+            const glue_per_m3 = 25;
+            const glue_kg = Math.ceil(total_volume * glue_per_m3 * 1.1);
+            const bags_25kg = Math.ceil(glue_kg / 25);
+
+            // Стоимость
+            const cost_blocks = total_volume * price_per_m3;
+
+            let html = `
+                <strong>Результат расчёта:</strong><br><br>
+                Периметр: <strong>${perimeter.toFixed(2)} м</strong><br>
+                Чистая площадь стен: <strong>${net_wall_area.toFixed(2)} м²</strong><br>
+                Толщина стены: <strong>${wall_thickness_m} м</strong><br><br>
+                
+                <strong>Объём газобетона:</strong><br>
+                Стены: <strong>${volume_walls.toFixed(2)} м³</strong><br>
+                ${armopoyas_height > 0 ? `Армопояс: <strong>${volume_armopoyas.toFixed(2)} м³</strong><br>` : ''}
+                <span class="highlight">Всего объём: ${total_volume.toFixed(2)} м³</span><br><br>
+                
+                <strong>Количество блоков:</strong><br>
+                Точное: <strong>${total_blocks_exact.toFixed(1)} шт.</strong><br>
+                Минимально: <strong>${total_blocks_min} шт.</strong><br>
+                <span class="highlight">Рекомендуется (с запасом 5% + 6 шт.): ${recommended_blocks} шт.</span><br><br>
+                
+                <strong>Поддоны:</strong> <span class="highlight">${pallets} поддонов</span> 
+                (по ${blocks_per_pallet} блоков на поддоне)<br><br>
+                
+                <strong>Клей для кладки:</strong><br>
+                Расход: <strong>${glue_kg} кг</strong> сухой смеси<br>
+                Мешков по 25 кг: <strong>${bags_25kg} шт.</strong><br><br>
+                
+                <strong>Стоимость блоков:</strong><br>
+                <span class="highlight">${Math.round(cost_blocks).toLocaleString('ru-RU')} руб.</span> 
+                (по ${price_per_m3.toLocaleString('ru-RU')} руб./м³)<br><br>
+                
+                <div class="note">
+                    • Запас на блоки: 5% + 6 штук<br>
+                    • Поддоны округлены в большую сторону<br>
+                    • Расход клея ≈ 25 кг/м³ + 10% запас<br>
+                    • Изменяй цену за м³ и количество блоков на поддоне под свои условия
+                </div>
+            `;
+
+            document.getElementById('result').innerHTML = html;
+        }
+
+        // Автоматический расчёт при изменении полей
+        window.onload = calculate;
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('input', calculate);
+        });
+    </script>
+</body>
+</html>
